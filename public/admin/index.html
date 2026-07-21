@@ -1131,7 +1131,7 @@
       clientErrors.unshift(data);
       if (clientErrors.length > 20) clientErrors.pop();
       updateErrorBadge();
-      showToast('Error en ' + data.clientName + ': ' + data.context, 'error');
+      showToast(data.clientName + ': ' + data.error, 'error');
     });
 
     function updateErrorBadge() {

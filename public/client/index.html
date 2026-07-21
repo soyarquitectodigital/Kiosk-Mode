@@ -260,13 +260,13 @@
               console.log('Watchdog: recargando player', idx, 'intento', retryCounts[idx]);
               player.playVideo();
             } else {
-              reportError('YouTube player no responde despues de ' + MAX_RETRIES + ' intentos', 'youtube-watchdog');
+              reportError('YouTube no responde despues de ' + MAX_RETRIES + ' intentos', 'YouTube');
             }
           } else {
             retryCounts[idx] = 0;
           }
         } catch (e) {
-          reportError(e, 'youtube-health-check');
+          reportError(e, 'YouTube');
         }
       });
     }
@@ -315,7 +315,7 @@
 
     function createAntiPausePlayer(containerId, videoId) {
       if (!youtubeApiReady) {
-        reportError('YouTube API no lista', 'youtube-api');
+        reportError('YouTube API no lista', 'YouTube');
         return;
       }
       try {
@@ -345,14 +345,15 @@
               }
             },
             onError: (event) => {
-              reportError('YouTube error code: ' + event.data, 'youtube-player');
+              const errors = {2:'URL invalida',5:'Error de reproductor HTML5',100:'Video no encontrado',101:'Reproduccion bloqueada',150:'Reproduccion bloqueada'};
+              reportError('Error de YouTube (codigo ' + event.data + ': ' + (errors[event.data]||'desconocido') + ')', 'YouTube');
             }
           }
         });
         youtubePlayers.push(player);
         return player;
       } catch (e) {
-        reportError(e, 'youtube-create');
+        reportError(e, 'YouTube');
       }
     }
 
@@ -429,7 +430,7 @@
           };
           img.onerror = () => {
             cell.innerHTML = '<div class="error-screen">No se pudo cargar la imagen<br><small>' + url + '</small></div>';
-            reportError('Error cargando imagen: ' + url, 'image-load');
+            reportError('Error cargando imagen: ' + url, 'Imagen');
           };
           cell.appendChild(img);
         } else if (type === 'video') {
@@ -449,7 +450,7 @@
               setTimeout(() => { video.load(); video.play(); }, 2000);
             } else {
               cell.innerHTML = '<div class="error-screen">No se pudo cargar el video<br><small>' + url + '</small><div class="retry-indicator">Reintentando...</div></div>';
-              reportError('Error cargando video despues de ' + MAX_RETRIES + ' intentos: ' + url, 'video-load');
+              reportError('Error cargando video despues de ' + MAX_RETRIES + ' intentos: ' + url, 'Video');
             }
           };
           video.onstalled = () => {
@@ -465,7 +466,7 @@
           const videoId = extractYouTubeId(url);
           if (!videoId) {
             cell.innerHTML = '<div class="error-screen">No se pudo extraer el ID de YouTube<br><small>' + url + '</small></div>';
-            reportError('ID invalido de YouTube: ' + url, 'youtube-parse');
+            reportError('No se pudo extraer el ID del video de YouTube', 'YouTube: URL invalida');
             continue;
           }
           const containerId = 'yt-' + Date.now() + '-' + i;
@@ -485,7 +486,7 @@
               }, 300);
             });
           }).catch(e => {
-            reportError(e, 'youtube-api-load');
+            reportError(e, 'YouTube');
           });
         } else {
           const iframe = document.createElement('iframe');
@@ -495,7 +496,7 @@
             iframe.classList.add('loaded');
           };
           iframe.onerror = () => {
-            reportError('Error cargando iframe: ' + url, 'iframe-load');
+            reportError('Error cargando iframe: ' + url, 'Web');
           };
           cell.appendChild(iframe);
         }
