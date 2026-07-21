@@ -151,12 +151,8 @@
     const socket = io({ reconnection: true, reconnectionAttempts: Infinity, reconnectionDelay: 2000 });
     const contentDiv = document.getElementById('content');
     const statusOverlay = document.getElementById('status-overlay');
-    let youtubePlayers = [];
-    let youtubeApiReady = false;
     let currentItems = [];
     let currentLayout = 'layout-1';
-    let retryCounts = {};
-    let watchdogInterval = null;
     let heartbeatInterval = null;
     const MAX_RETRIES = 3;
     
@@ -231,53 +227,22 @@
       }
     }
 
-    function startWatchdog() {
-      if (watchdogInterval) clearInterval(watchdogInterval);
-      watchdogInterval = setInterval(() => {
-        checkHealth();
-      }, 10000);
-    }
-
-    function stopWatchdog() {
-      if (watchdogInterval) {
-        clearInterval(watchdogInterval);
-        watchdogInterval = null;
-      }
-    }
-
-    function checkHealth() {
-      youtubePlayers.forEach((player, idx) => {
-        try {
-          if (!player || !player.getPlayerState) return;
-          const state = player.getPlayerState();
-          if (state === YT.PlayerState.PAUSED || state === YT.PlayerState.ENDED) {
-            console.log('Watchdog: reanudando player', idx);
-            player.playVideo();
-          }
-          if (state === -1 || state === YT.PlayerState.CUED) {
-            retryCounts[idx] = (retryCounts[idx] || 0) + 1;
-            if (retryCounts[idx] <= MAX_RETRIES) {
-              console.log('Watchdog: recargando player', idx, 'intento', retryCounts[idx]);
-              player.playVideo();
-            } else {
-              reportError('YouTube no responde despues de ' + MAX_RETRIES + ' intentos', 'YouTube');
-            }
-          } else {
-            retryCounts[idx] = 0;
-          }
-        } catch (e) {
-          reportError(e, 'YouTube');
-        }
-      });
-    }
-
     function clearContent() {
       contentDiv.innerHTML = '';
       contentDiv.className = 'layout-1';
-      youtubePlayers.forEach(p => { try { p.destroy?.(); } catch(e) {} });
-      youtubePlayers = [];
-      retryCounts = {};
-      stopWatchdog();
+    }
+
+    function createCell(index, layout) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.index = index;
+      if (layout !== 'layout-1') {
+        const label = document.createElement('div');
+        label.className = 'cell-label';
+        label.textContent = 'Pantalla ' + (index + 1);
+        cell.appendChild(label);
+      }
+      return cell;
     }
 
     function isYouTubeUrl(url) {
@@ -294,90 +259,6 @@
         if (match) return match[1];
       }
       return null;
-    }
-
-    function loadYouTubeAPI() {
-      return new Promise((resolve) => {
-        if (window.YT && window.YT.Player) {
-          youtubeApiReady = true;
-          resolve();
-          return;
-        }
-        window.onYouTubeIframeAPIReady = () => {
-          youtubeApiReady = true;
-          resolve();
-        };
-        const tag = document.createElement('script');
-        tag.src = 'https://www.youtube.com/iframe_api';
-        document.head.appendChild(tag);
-      });
-    }
-
-    function createAntiPausePlayer(containerId, videoId, cell) {
-      if (!youtubeApiReady) {
-        if (cell) cell.innerHTML = '<div class="error-screen">YouTube API no disponible<br><small>Verifica la conexion a internet</small></div>';
-        reportError('YouTube API no lista', 'YouTube');
-        return null;
-      }
-      try {
-        const player = new YT.Player(containerId, {
-          videoId: videoId,
-          playerVars: {
-            autoplay: 1,
-            mute: 1,
-            controls: 0,
-            disablekb: 1,
-            fs: 0,
-            modestbranding: 1,
-            rel: 0,
-            showinfo: 0,
-            iv_load_policy: 3,
-            playsinline: 1,
-            loop: 1,
-            playlist: videoId
-          },
-          events: {
-            onReady: (event) => {
-              event.target.playVideo();
-              if (cell) {
-                const div = cell.querySelector('#' + containerId);
-                if (div) div.style.display = 'block';
-                const loader = cell.querySelector('.yt-loading');
-                if (loader) loader.style.display = 'none';
-              }
-            },
-            onStateChange: (event) => {
-              if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
-                event.target.playVideo();
-              }
-            },
-            onError: (event) => {
-              const errors = {2:'URL invalida',5:'Error de reproductor HTML5',100:'Video no encontrado o privado',101:'Reproduccion bloqueada por el sitio',150:'Reproduccion bloqueada por el sitio'};
-              if (cell) cell.innerHTML = '<div class="error-screen">Error de YouTube<br><small>' + (errors[event.data] || 'Codigo ' + event.data) + '</small></div>';
-              reportError('Error de YouTube (codigo ' + event.data + ': ' + (errors[event.data]||'desconocido') + ')', 'YouTube');
-            }
-          }
-        });
-        youtubePlayers.push(player);
-        return player;
-      } catch (e) {
-        if (cell) cell.innerHTML = '<div class="error-screen">Error al crear reproductor<br><small>' + e.message + '</small></div>';
-        reportError(e, 'YouTube');
-        return null;
-      }
-    }
-
-    function createCell(index, layout) {
-      const cell = document.createElement('div');
-      cell.className = 'cell';
-      cell.dataset.index = index;
-      if (layout !== 'layout-1') {
-        const label = document.createElement('div');
-        label.className = 'cell-label';
-        label.textContent = 'Pantalla ' + (index + 1);
-        cell.appendChild(label);
-      }
-      return cell;
     }
 
     function setLayout(layout) {
@@ -440,45 +321,17 @@
             continue;
           }
           
-          const loadingEl = document.createElement('div');
-          loadingEl.className = 'yt-loading';
-          loadingEl.style.cssText = 'color:rgba(255,255,255,0.5);display:flex;align-items:center;justify-content:center;height:100%;font-size:0.9rem;';
-          loadingEl.textContent = 'Cargando YouTube...';
-          cell.appendChild(loadingEl);
-          
-          const containerId = 'yt-' + Date.now() + '-' + i;
-          const div = document.createElement('div');
-          div.id = containerId;
-          div.style.cssText = 'width:100%;height:100%;position:absolute;inset:0;display:none;';
-          cell.appendChild(div);
-          
           cell.style.opacity = '1';
           cell.style.transform = 'scale(1)';
           
-          let timedOut = false;
-          const timeout = setTimeout(() => {
-            if (!timedOut) {
-              timedOut = true;
-              cell.innerHTML = '<div class="error-screen">Timeout al cargar YouTube<br><small>Verifica la conexion o el ID del video</small></div>';
-              reportError('Timeout cargando YouTube: ' + videoId, 'YouTube');
-            }
-          }, 20000);
-          
-          loadYouTubeAPI().then(() => {
-            if (timedOut) return;
-            const player = createAntiPausePlayer(containerId, videoId, cell);
-            if (player) {
-              clearTimeout(timeout);
-              if (youtubePlayers.length > 0) startWatchdog();
-            }
-          }).catch(e => {
-            if (!timedOut) {
-              clearTimeout(timeout);
-              timedOut = true;
-              cell.innerHTML = '<div class="error-screen">Error al cargar YouTube<br><small>Verifica la conexion a internet</small></div>';
-              reportError(e, 'YouTube');
-            }
-          });
+          const embedUrl = 'https://www.youtube.com/embed/' + videoId + '?autoplay=1&mute=1&loop=1&playlist=' + videoId + '&controls=0&disablekb=1&modestbranding=1&rel=0&playsinline=1';
+          const iframe = document.createElement('iframe');
+          iframe.src = embedUrl;
+          iframe.setAttribute('allow', 'autoplay; encrypted-media');
+          iframe.setAttribute('allowfullscreen', '');
+          iframe.style.cssText = 'width:100%;height:100%;position:absolute;inset:0;border:none;';
+          iframe.onload = () => { iframe.classList.add('loaded'); };
+          cell.appendChild(iframe);
         } else if (type === 'image') {
           const img = document.createElement('img');
           img.src = url;
