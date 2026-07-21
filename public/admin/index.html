@@ -838,6 +838,113 @@
     .no-clients .icon { font-size: 3rem; margin-bottom: 12px; display: block; opacity: 0.5; }
     .no-clients p { font-size: 0.9rem; }
 
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .modal-overlay.show { opacity: 1; pointer-events: auto; }
+    .modal {
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: var(--shadow);
+      transform: translateY(20px);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .modal-overlay.show .modal { transform: translateY(0); }
+    .modal h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .modal p { color: var(--text-muted); font-size: 0.85rem; line-height: 1.6; margin-bottom: 12px; }
+    .modal .copy-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      margin: 12px 0;
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: var(--accent);
+      word-break: break-all;
+    }
+    .modal .copy-box .url-text {
+      flex: 1;
+      user-select: all;
+    }
+    .modal .copy-btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.2s;
+    }
+    .modal .copy-btn:hover { opacity: 0.85; }
+    .modal .copy-btn.copied { background: var(--success); }
+    .modal .close-modal {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-2);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.85rem;
+      cursor: pointer;
+      margin-top: 16px;
+      transition: all 0.2s;
+    }
+    .modal .close-modal:hover { border-color: var(--accent); }
+    .modal .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .modal .step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+      color: var(--text);
+    }
+    .modal .step-num {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: var(--accent-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
     /* Toast */
     .toast {
       position: fixed;
@@ -975,7 +1082,10 @@
       <div class="panel">
         <div class="broadcast-bar">
           <span><strong id="client-count">0</strong> clientes conectados</span>
-          <button class="btn" onclick="sendToAll('blackout')">&#x26AB; Blackout global</button>
+          <div style="display:flex;gap:8px;">
+            <button class="btn" onclick="showConnectionHelp()" title="Como conectar mas pantallas">&#x1F4A1; Conectar</button>
+            <button class="btn" onclick="sendToAll('blackout')">&#x26AB; Blackout global</button>
+          </div>
         </div>
         <div class="client-list" id="client-list">
           <div class="no-clients">
@@ -1335,6 +1445,27 @@
     }
 
     loadMediaLibrary();
+
+    function showConnectionHelp() {
+      const baseUrl = window.location.origin;
+      document.getElementById('client-url').textContent = baseUrl + '/client/?name=nombre';
+      document.getElementById('connection-help').classList.add('show');
+      document.getElementById('copy-btn').textContent = 'Copiar';
+      document.getElementById('copy-btn').classList.remove('copied');
+    }
+
+    function hideConnectionHelp() {
+      document.getElementById('connection-help').classList.remove('show');
+    }
+
+    function copyClientUrl() {
+      const url = document.getElementById('client-url').textContent;
+      navigator.clipboard.writeText(url).then(() => {
+        const btn = document.getElementById('copy-btn');
+        btn.textContent = 'Copiado!';
+        btn.classList.add('copied');
+      });
+    }
   </script>
 
   <div class="error-badge hidden" id="error-badge" onclick="toggleErrorLog()">0</div>
@@ -1344,6 +1475,24 @@
       <button class="close-btn" onclick="toggleErrorLog()">&times;</button>
     </div>
     <div class="error-list" id="error-list"></div>
+  </div>
+
+  <div class="modal-overlay" id="connection-help" onclick="if(event.target===this)hideConnectionHelp()">
+    <div class="modal">
+      <h2>&#x1F4A1; Como conectar mas pantallas</h2>
+      <p>Para conectar una nueva computadora o pantalla como cliente kiosko, usa esta URL:</p>
+      <div class="copy-box">
+        <span class="url-text" id="client-url"></span>
+        <button class="copy-btn" id="copy-btn" onclick="copyClientUrl()">Copiar</button>
+      </div>
+      <div class="steps">
+        <div class="step"><span class="step-num">1</span> En la otra computadora, abre un navegador (Chrome/Chromium)</div>
+        <div class="step"><span class="step-num">2</span> Pega la URL de arriba (reemplaza "nombre" por el nombre de la pantalla)</div>
+        <div class="step"><span class="step-num">3</span> Opcional: usa el script <code style="background:var(--bg-2);padding:2px 6px;border-radius:4px;">scripts/start-kiosko.sh</code> en Linux para modo kiosko automatico</div>
+        <div class="step"><span class="step-num">4</span> La pantalla aparecera en este panel automaticamente</div>
+      </div>
+      <button class="close-modal" onclick="hideConnectionHelp()">Entendido</button>
+    </div>
   </div>
 </body>
 </html>
