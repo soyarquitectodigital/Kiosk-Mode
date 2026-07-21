@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modo Kiosko - Panel de Control</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --accent: #4f46e5;
+      --accent-light: #6366f1;
+      --accent-glow: rgba(79, 70, 229, 0.12);
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    :root[data-theme="dark"] {
+      --bg-0: #0c0e1b;
+      --bg-1: #111328;
+      --bg-2: #161b36;
+      --bg-3: #1c2344;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --border: rgba(148, 163, 184, 0.1);
+      --gradient-logo: linear-gradient(135deg, #fff, var(--accent-light));
+      --gradient-btn: linear-gradient(135deg, var(--accent), #8b5cf6);
+      --gradient-bar: linear-gradient(135deg, var(--accent), #8b5cf6);
+      --card-hover: var(--accent-glow);
+    }
+    :root[data-theme="light"] {
+      --bg-0: #f8fafc;
+      --bg-1: #ffffff;
+      --bg-2: #f1f5f9;
+      --bg-3: #e2e8f0;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --text-dim: #94a3b8;
+      --border: rgba(148, 163, 184, 0.25);
+      --gradient-logo: linear-gradient(135deg, #1e293b, var(--accent));
+      --gradient-btn: linear-gradient(135deg, var(--accent), #6366f1);
+      --gradient-bar: linear-gradient(135deg, var(--accent), #6366f1);
+      --card-hover: rgba(79, 70, 229, 0.04);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg-0);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+      transition: background 0.3s, color 0.3s;
+    }
+    .container { max-width: 1500px; margin: 0 auto; }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .header-brand .logo {
+      width: 44px; height: 44px;
+      background: var(--gradient-btn);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      box-shadow: 0 4px 20px rgba(79, 70, 229, 0.25);
+    }
+    .header-brand h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: var(--gradient-logo);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .header-brand p {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .theme-toggle {
+      width: 48px; height: 26px;
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      padding: 0 3px;
+    }
+    .theme-toggle::after {
+      content: '';
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--accent);
+      position: absolute;
+      left: 3px;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+    }
+    [data-theme="light"] .theme-toggle::after { transform: translateX(22px); }
+    .theme-toggle .icon-sun, .theme-toggle .icon-moon {
+      font-size: 12px;
+      z-index: 1;
+      transition: opacity 0.3s;
+    }
+    .theme-toggle .icon-sun { margin-left: auto; opacity: 0; }
+    .theme-toggle .icon-moon { opacity: 1; }
+    [data-theme="light"] .theme-toggle .icon-sun { opacity: 1; }
+    [data-theme="light"] .theme-toggle .icon-moon { opacity: 0; }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      border-radius: 100px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .status-pill .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Grid */
+    .grid {
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 1024px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    /* Panel */
+    .panel {
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .panel-header h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .panel-header .icon {
+      width: 32px; height: 32px;
+      background: var(--accent-glow);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+
+    /* Layout selector */
+    .layout-selector {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .layout-selector label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 10px 6px;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    .layout-selector label:hover {
+      border-color: var(--accent);
+      background: var(--card-hover);
+    }
+    .layout-selector input[type="radio"] { display: none; }
+    .layout-selector input[type="radio"]:checked + label {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+      color: var(--accent);
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+    .layout-preview {
+      width: 24px; height: 24px;
+      display: grid;
+      gap: 2px;
+    }
+    .layout-preview.layout-1 { grid-template: 1fr / 1fr; }
+    .layout-preview.layout-2h { grid-template: 1fr / 1fr 1fr; }
+    .layout-preview.layout-2v { grid-template: 1fr 1fr / 1fr; }
+    .layout-preview.layout-4 { grid-template: 1fr 1fr / 1fr 1fr; }
+    .layout-preview div {
+      background: currentColor;
+      border-radius: 2px;
+      opacity: 0.6;
+    }
+
+    /* Cell inputs */
+    .cell-input {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      margin-bottom: 10px;
+      transition: all 0.2s;
+    }
+    .cell-input:hover { border-color: var(--accent); }
+    .cell-input-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .cell-input-header span {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .cell-type {
+      display: flex;
+      gap: 4px;
+    }
+    .cell-type label {
+      padding: 4px 10px;
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+    .cell-type label:hover { border-color: var(--accent); }
+    .cell-type input[type="radio"] { display: none; }
+    .cell-type input[type="radio"]:checked + label {
+      background: var(--accent-glow);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Type selector */
+    .type-selector {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .type-selector label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 14px 8px;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    .type-selector label:hover {
+      border-color: var(--accent);
+      background: var(--card-hover);
+    }
+    .type-selector input[type="radio"] { display: none; }
+    .type-selector input[type="radio"]:checked + label {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+      color: var(--accent);
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+    .type-selector .type-icon { font-size: 1.4rem; }
+
+    /* Inputs */
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-2);
+      color: var(--text);
+      font-size: 0.9rem;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    input[type="text"]::placeholder { color: var(--text-dim); }
+    input[type="text"]:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    /* Buttons */
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      border: none;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn-primary {
+      background: var(--gradient-btn);
+      color: white;
+      box-shadow: 0 4px 20px rgba(79, 70, 229, 0.25);
+    }
+    .btn-primary:hover {
+      box-shadow: 0 6px 24px rgba(79, 70, 229, 0.35);
+    }
+    .btn-secondary {
+      background: var(--bg-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover {
+      background: var(--card-hover);
+      border-color: var(--accent);
+    }
+    .btn-success {
+      background: linear-gradient(135deg, var(--success), #16a34a);
+      color: white;
+    }
+    .btn-warning {
+      background: linear-gradient(135deg, var(--warning), #d97706);
+      color: white;
+    }
+    .btn-danger {
+      background: linear-gradient(135deg, var(--danger), #dc2626);
+      color: white;
+    }
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .btn-group .btn { flex: 1; }
+
+    /* Selected client info */
+    .selected-info {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .selected-info .client-avatar {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      background: var(--gradient-btn);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+    .selected-info .client-details h4 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .selected-info .client-details p {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+    .selected-info .client-details .none { color: var(--text-dim); font-style: italic; }
+
+    /* Upload area */
+    .upload-area {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-sm);
+      padding: 28px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-bottom: 16px;
+      background: var(--bg-2);
+      position: relative;
+      overflow: hidden;
+    }
+    .upload-area::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--accent-glow);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .upload-area:hover, .upload-area.dragover {
+      border-color: var(--accent);
+    }
+    .upload-area:hover::before, .upload-area.dragover::before {
+      opacity: 1;
+    }
+    .upload-area input { display: none; }
+    .upload-area-content {
+      position: relative;
+      z-index: 1;
+    }
+    .upload-area .upload-icon {
+      font-size: 2rem;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .upload-area p {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    .upload-area strong { color: var(--accent); }
+
+    /* Progress bar */
+    .progress-bar {
+      width: 100%;
+      height: 3px;
+      background: var(--bg-3);
+      border-radius: 3px;
+      margin-top: 12px;
+      overflow: hidden;
+      display: none;
+    }
+    .progress-bar.active { display: block; }
+    .progress-bar .fill {
+      height: 100%;
+      background: var(--gradient-btn);
+      width: 0%;
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Media grid */
+    .media-section { margin-top: 20px; }
+    .media-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .media-section-header h3 {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .media-count {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      background: var(--bg-2);
+      padding: 2px 8px;
+      border-radius: 100px;
+    }
+    .media-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: 10px;
+      max-height: 280px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .media-grid::-webkit-scrollbar { width: 4px; }
+    .media-grid::-webkit-scrollbar-track { background: transparent; }
+    .media-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .media-item {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+      aspect-ratio: 1;
+    }
+    .media-item:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+      box-shadow: var(--shadow);
+    }
+    .media-item img, .media-item video {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .media-item .media-icon {
+      width: 100%; height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+    }
+    .media-item .media-name {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 6px 8px;
+      background: linear-gradient(transparent, rgba(0,0,0,0.75));
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.85);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .media-item .delete-btn {
+      position: absolute;
+      top: 4px; right: 4px;
+      background: var(--danger);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 22px; height: 22px;
+      font-size: 11px;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      z-index: 2;
+    }
+    .media-item:hover .delete-btn { display: flex; }
+    .media-item .type-badge {
+      position: absolute;
+      top: 4px; left: 4px;
+      background: rgba(0,0,0,0.55);
+      color: white;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.6rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    /* Client list */
+    .broadcast-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--gradient-bar);
+      color: white;
+      padding: 14px 20px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 20px;
+      box-shadow: 0 4px 20px rgba(79, 70, 229, 0.2);
+    }
+    .broadcast-bar span {
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    .broadcast-bar span strong {
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+    .broadcast-bar .btn {
+      width: auto;
+      padding: 8px 18px;
+      font-size: 0.8rem;
+      background: rgba(255,255,255,0.15);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .broadcast-bar .btn:hover {
+      background: rgba(255,255,255,0.25);
+    }
+
+    .client-list { display: flex; flex-direction: column; gap: 12px; }
+    .client-card {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .client-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: transparent;
+      transition: background 0.25s;
+    }
+    .client-card:hover {
+      border-color: var(--accent);
+      transform: translateX(4px);
+      box-shadow: var(--shadow-sm);
+    }
+    .client-card:hover::before {
+      background: var(--accent);
+    }
+    .client-card.selected {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+    .client-card.selected::before {
+      background: var(--accent);
+    }
+    .client-card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .client-avatar-sm {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: var(--gradient-btn);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    .client-card-header .client-info h4 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .client-card-header .client-info p {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-top: 1px;
+    }
+    .client-status {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--success);
+      font-weight: 500;
+    }
+    .client-status .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 6px var(--success);
+    }
+    .client-current {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      padding: 8px 10px;
+      background: var(--bg-3);
+      border-radius: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 10px;
+      transition: background 0.3s;
+    }
+    .client-actions {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    .client-actions .btn {
+      padding: 8px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .client-status.offline { color: var(--danger); }
+    .client-status.offline .dot { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
+    .client-status.warning { color: var(--warning); }
+    .client-status.warning .dot { background: var(--warning); box-shadow: 0 0 6px var(--warning); }
+    .client-heartbeat {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+    .error-log {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      width: 360px;
+      max-height: 400px;
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      z-index: 1001;
+      overflow: hidden;
+      display: none;
+    }
+    .error-log.show { display: block; }
+    .error-log-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--bg-2);
+      border-bottom: 1px solid var(--border);
+    }
+    .error-log-header h3 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .error-log-header .close-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1.2rem;
+      width: auto;
+      padding: 0;
+    }
+    .error-list {
+      max-height: 340px;
+      overflow-y: auto;
+      padding: 8px;
+    }
+    .error-item {
+      padding: 10px 12px;
+      background: var(--bg-2);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      border-left: 3px solid var(--danger);
+    }
+    .error-item .error-client {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .error-item .error-msg {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .error-item .error-time {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+    }
+    .error-badge {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      width: 20px;
+      height: 20px;
+      background: var(--danger);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      cursor: pointer;
+      z-index: 1002;
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+    }
+    .error-badge.hidden { display: none; }
+
+    .no-clients {
+      text-align: center;
+      color: var(--text-dim);
+      padding: 60px 20px;
+    }
+    .no-clients .icon { font-size: 3rem; margin-bottom: 12px; display: block; opacity: 0.5; }
+    .no-clients p { font-size: 0.9rem; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: var(--shadow);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 1000;
+      color: var(--text);
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { border-left: 3px solid var(--success); }
+    .toast.error { border-left: 3px solid var(--danger); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-brand">
+        <div class="logo">&#x1F3A5;</div>
+        <div>
+          <h1>Modo Kiosko</h1>
+          <p>Panel de control remoto</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema">
+          <span class="icon-moon">&#x1F319;</span>
+          <span class="icon-sun">&#x2600;</span>
+        </div>
+        <div class="status-pill">
+          <span class="dot"></span>
+          <span>Servidor activo</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="icon">&#x1F39F;</div>
+          <h2>Enviar Contenido</h2>
+        </div>
+
+        <div class="form-group">
+          <label>Distribucion de pantalla</label>
+          <div class="layout-selector">
+            <div>
+              <input type="radio" name="layout" id="layout-1" value="layout-1" checked onchange="updateCellInputs()">
+              <label for="layout-1">
+                <div class="layout-preview layout-1"><div></div></div>
+                1
+              </label>
+            </div>
+            <div>
+              <input type="radio" name="layout" id="layout-2h" value="layout-2h" onchange="updateCellInputs()">
+              <label for="layout-2h">
+                <div class="layout-preview layout-2h"><div></div><div></div></div>
+                2 Horizontal
+              </label>
+            </div>
+            <div>
+              <input type="radio" name="layout" id="layout-2v" value="layout-2v" onchange="updateCellInputs()">
+              <label for="layout-2v">
+                <div class="layout-preview layout-2v"><div></div><div></div></div>
+                2 Vertical
+              </label>
+            </div>
+            <div>
+              <input type="radio" name="layout" id="layout-4" value="layout-4" onchange="updateCellInputs()">
+              <label for="layout-4">
+                <div class="layout-preview layout-4"><div></div><div></div><div></div><div></div></div>
+                2x2
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div id="cell-inputs">
+          <div class="cell-input" data-cell="0">
+            <div class="cell-input-header">
+              <span>Pantalla 1</span>
+              <div class="cell-type">
+                <input type="radio" name="type-0" id="type-0-web" value="web" checked><label for="type-0-web">Web</label>
+                <input type="radio" name="type-0" id="type-0-image" value="image"><label for="type-0-image">Img</label>
+                <input type="radio" name="type-0" id="type-0-video" value="video"><label for="type-0-video">Vid</label>
+                <input type="radio" name="type-0" id="type-0-youtube" value="youtube"><label for="type-0-youtube">YT</label>
+              </div>
+            </div>
+            <input type="text" id="url-0" placeholder="https://... o ID de YouTube">
+          </div>
+        </div>
+
+        <div class="selected-info" id="selected-info">
+          <div class="client-avatar">&#x1F4BB;</div>
+          <div class="client-details">
+            <h4>Cliente seleccionado</h4>
+            <p class="none" id="selected-name">Ninguno seleccionado</p>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="sendToSelected()">
+          <span>&#x2192;</span> Enviar a seleccionado
+        </button>
+        <button class="btn btn-secondary" onclick="sendToAll()" style="margin-top: 8px;">
+          <span>&#x1F4E1;</span> Enviar a todos
+        </button>
+
+        <div class="media-section">
+          <div class="media-section-header">
+            <h3>Biblioteca de medios</h3>
+            <span class="media-count" id="media-count">0 archivos</span>
+          </div>
+          <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
+            <input type="file" id="file-input" accept="image/*,video/*" onchange="handleFileSelect(event)">
+            <div class="upload-area-content">
+              <span class="upload-icon">&#x1F4E4;</span>
+              <p><strong>Haz clic o arrastra</strong><br>una imagen o video aqui</p>
+            </div>
+            <div class="progress-bar" id="progress-bar"><div class="fill" id="progress-fill"></div></div>
+          </div>
+          <div class="media-grid" id="media-grid"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="broadcast-bar">
+          <span><strong id="client-count">0</strong> clientes conectados</span>
+          <button class="btn" onclick="sendToAll('blackout')">&#x26AB; Blackout global</button>
+        </div>
+        <div class="client-list" id="client-list">
+          <div class="no-clients">
+            <span class="icon">&#x1F4A4;</span>
+            <p>Esperando clientes...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">
+    <span id="toast-icon"></span>
+    <span id="toast-message"></span>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    // Theme toggle
+    function toggleTheme() {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('kiosko-theme', next);
+    }
+    const savedTheme = localStorage.getItem('kiosko-theme');
+    if (savedTheme) {
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    }
+
+    const socket = io();
+    let selectedClient = null;
+    let clients = [];
+
+    socket.on('clients-updated', (data) => {
+      clients = data;
+      renderClients();
+    });
+
+    let clientErrors = [];
+    socket.on('client-error', (data) => {
+      clientErrors.unshift(data);
+      if (clientErrors.length > 20) clientErrors.pop();
+      updateErrorBadge();
+      showToast('Error en ' + data.clientName + ': ' + data.context, 'error');
+    });
+
+    function updateErrorBadge() {
+      const badge = document.getElementById('error-badge');
+      badge.textContent = clientErrors.length;
+      badge.classList.toggle('hidden', clientErrors.length === 0);
+    }
+
+    function toggleErrorLog() {
+      const log = document.getElementById('error-log');
+      const list = document.getElementById('error-list');
+      if (log.classList.contains('show')) {
+        log.classList.remove('show');
+      } else {
+        list.innerHTML = clientErrors.map(err => `
+          <div class="error-item">
+            <div class="error-client">${err.clientName}</div>
+            <div class="error-msg">${err.error}</div>
+            <div class="error-time">${err.context} - ${new Date(err.timestamp).toLocaleTimeString()}</div>
+          </div>
+        `).join('');
+        log.classList.add('show');
+      }
+    }
+
+    function getClientStatus(client) {
+      if (!client.lastHeartbeat) return { class: '', text: 'Activo' };
+      const lastBeat = new Date(client.lastHeartbeat).getTime();
+      const now = Date.now();
+      const diff = now - lastBeat;
+      if (diff > 90000) return { class: 'offline', text: 'Desconectado' };
+      if (diff > 45000) return { class: 'warning', text: 'Lento' };
+      return { class: '', text: 'Activo' };
+    }
+
+    function renderClients() {
+      const list = document.getElementById('client-list');
+      const count = document.getElementById('client-count');
+      count.textContent = clients.length;
+
+      if (clients.length === 0) {
+        list.innerHTML = `
+          <div class="no-clients">
+            <span class="icon">&#x1F4A4;</span>
+            <p>Esperando clientes...</p>
+          </div>`;
+        return;
+      }
+
+      list.innerHTML = clients.map(client => {
+        const status = getClientStatus(client);
+        const lastBeat = client.lastHeartbeat ? new Date(client.lastHeartbeat).toLocaleTimeString() : 'N/A';
+        return `
+        <div class="client-card ${selectedClient?.clientId === client.clientId ? 'selected' : ''}" 
+             onclick="selectClient('${client.clientId}')">
+          <div class="client-card-header">
+            <div class="client-avatar-sm">&#x1F4BB;</div>
+            <div class="client-info">
+              <h4>${client.name}</h4>
+              <p>${client.clientId}</p>
+            </div>
+            <div class="client-status ${status.class}">
+              <span class="dot"></span>
+              ${status.text}
+            </div>
+          </div>
+          <div class="client-heartbeat">Ultimo ping: ${lastBeat}</div>
+          <div class="client-current">${client.currentContent ? 
+            client.currentContent.items ? `&#x1F440; Layout ${client.currentContent.layout} - ${client.currentContent.items.length} item(s)` :
+            client.currentContent.type === 'blackout' ? '&#x26AB; Blackout' :
+            `&#x1F440; ${client.currentContent.type} - ${client.currentContent.url?.substring(0, 50)}...` : 
+            'Sin contenido activo'}</div>
+          <div class="client-actions">
+            <button class="btn btn-secondary" onclick="event.stopPropagation(); sendCommand('${client.clientId}', 'reload')">&#x1F504; Recargar</button>
+            <button class="btn btn-warning" onclick="event.stopPropagation(); sendCommand('${client.clientId}', 'blackout')">&#x26AB; Apagar</button>
+            <button class="btn btn-success" onclick="event.stopPropagation(); sendCommand('${client.clientId}', 'identify')">&#x1F50D; Identificar</button>
+            <button class="btn btn-secondary" onclick="event.stopPropagation(); sendCommand('${client.clientId}', 'fullscreen')">&#x26F6; Fullscreen</button>
+          </div>
+        </div>
+      `}).join('');
+    }
+
+    function selectClient(clientId) {
+      selectedClient = clients.find(c => c.clientId === clientId);
+      const nameEl = document.getElementById('selected-name');
+      if (selectedClient) {
+        nameEl.textContent = selectedClient.name;
+        nameEl.classList.remove('none');
+      } else {
+        nameEl.textContent = 'Ninguno seleccionado';
+        nameEl.classList.add('none');
+      }
+      renderClients();
+    }
+
+    function getLayout() {
+      return document.querySelector('input[name="layout"]:checked').value;
+    }
+
+    function getCellCount() {
+      const layout = getLayout();
+      return layout === 'layout-4' ? 4 : layout === 'layout-2h' || layout === 'layout-2v' ? 2 : 1;
+    }
+
+    function getCellData(index) {
+      const url = document.getElementById('url-' + index)?.value.trim();
+      const type = document.querySelector('input[name="type-' + index + '"]:checked')?.value;
+      return url ? { url, type } : null;
+    }
+
+    function getPayload() {
+      const layout = getLayout();
+      const count = getCellCount();
+      const items = [];
+      for (let i = 0; i < count; i++) {
+        const data = getCellData(i);
+        if (data) items.push(data);
+      }
+      if (items.length === 0) return null;
+      if (items.length === 1) {
+        return { url: items[0].url, type: items[0].type };
+      }
+      return { items, layout };
+    }
+
+    function updateCellInputs() {
+      const count = getCellCount();
+      const container = document.getElementById('cell-inputs');
+      let html = '';
+      for (let i = 0; i < count; i++) {
+        const existingUrl = document.getElementById('url-' + i)?.value || '';
+        const existingType = document.querySelector('input[name="type-' + i + '"]:checked')?.value || 'web';
+        html += `
+          <div class="cell-input" data-cell="${i}">
+            <div class="cell-input-header">
+              <span>Pantalla ${i + 1}</span>
+              <div class="cell-type">
+                <input type="radio" name="type-${i}" id="type-${i}-web" value="web" ${existingType === 'web' ? 'checked' : ''}><label for="type-${i}-web">Web</label>
+                <input type="radio" name="type-${i}" id="type-${i}-image" value="image" ${existingType === 'image' ? 'checked' : ''}><label for="type-${i}-image">Img</label>
+                <input type="radio" name="type-${i}" id="type-${i}-video" value="video" ${existingType === 'video' ? 'checked' : ''}><label for="type-${i}-video">Vid</label>
+                <input type="radio" name="type-${i}" id="type-${i}-youtube" value="youtube" ${existingType === 'youtube' ? 'checked' : ''}><label for="type-${i}-youtube">YT</label>
+              </div>
+            </div>
+            <input type="text" id="url-${i}" placeholder="https://... o ID de YouTube" value="${existingUrl}">
+          </div>
+        `;
+      }
+      container.innerHTML = html;
+    }
+
+    async function sendToSelected() {
+      if (!selectedClient) {
+        showToast('Selecciona un cliente primero', 'error');
+        return;
+      }
+      const payload = getPayload();
+      if (!payload) { showToast('Ingresa al menos una URL', 'error'); return; }
+      
+      try {
+        await fetch(`/api/clients/${selectedClient.clientId}/show`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        showToast(`Enviado a ${selectedClient.name}`, 'success');
+      } catch (e) { 
+        showToast('Error al enviar', 'error');
+        console.error(e); 
+      }
+    }
+
+    async function sendToAll(command) {
+      if (command === 'blackout') {
+        for (const client of clients) {
+          sendCommand(client.clientId, 'blackout');
+        }
+        showToast('Blackout enviado a todos', 'success');
+        return;
+      }
+
+      const payload = getPayload();
+      if (!payload) { showToast('Ingresa al menos una URL', 'error'); return; }
+      
+      try {
+        await fetch('/api/broadcast', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        showToast(`Enviado a ${clients.length} cliente(s)`, 'success');
+      } catch (e) { 
+        showToast('Error al enviar', 'error');
+        console.error(e); 
+      }
+    }
+
+    async function sendCommand(clientId, command) {
+      try {
+        await fetch(`/api/clients/${clientId}/command`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command })
+        });
+      } catch (e) { console.error(e); }
+    }
+
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      const msgEl = document.getElementById('toast-message');
+      const iconEl = document.getElementById('toast-icon');
+      msgEl.textContent = message;
+      iconEl.textContent = type === 'success' ? '&#x2705;' : '&#x274C;';
+      toast.className = `toast ${type} show`;
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    // Upload & Media Library
+    const uploadArea = document.getElementById('upload-area');
+    const fileInput = document.getElementById('file-input');
+    const progressBar = document.getElementById('progress-bar');
+    const progressFill = document.getElementById('progress-fill');
+
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        uploadFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    function handleFileSelect(e) {
+      if (e.target.files.length > 0) {
+        uploadFile(e.target.files[0]);
+      }
+    }
+
+    async function uploadFile(file) {
+      const formData = new FormData();
+      formData.append('file', file);
+      progressBar.classList.add('active');
+      progressFill.style.width = '30%';
+
+      try {
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        progressFill.style.width = '100%';
+        const data = await res.json();
+        if (data.success) {
+          loadMediaLibrary();
+          showToast('Archivo subido correctamente', 'success');
+          setTimeout(() => { progressBar.classList.remove('active'); progressFill.style.width = '0%'; }, 500);
+        } else {
+          showToast(data.error || 'Error al subir', 'error');
+          progressBar.classList.remove('active');
+        }
+      } catch (e) {
+        showToast('Error de red al subir', 'error');
+        progressBar.classList.remove('active');
+      }
+    }
+
+    async function loadMediaLibrary() {
+      try {
+        const res = await fetch('/api/uploads');
+        const items = await res.json();
+        const grid = document.getElementById('media-grid');
+        document.getElementById('media-count').textContent = `${items.length} archivo${items.length !== 1 ? 's' : ''}`;
+        if (items.length === 0) {
+          grid.innerHTML = '<p style="color:var(--text-dim);text-align:center;font-size:0.85rem;grid-column:1/-1;padding:20px;">Sin archivos subidos</p>';
+          return;
+        }
+        grid.innerHTML = items.map(item => `
+          <div class="media-item" onclick="sendMedia('${item.url}', '${item.type}')">
+            <button class="delete-btn" onclick="event.stopPropagation(); deleteMedia('${item.name}')">&#x2715;</button>
+            ${item.type === 'image' ? `<img src="${item.url}" alt="">` :
+              item.type === 'video' ? `<video src="${item.url}"></video>` :
+              `<div class="media-icon">&#x1F4C4;</div>`}
+            <span class="type-badge">${item.type}</span>
+            <div class="media-name">${item.name.replace(/^\d+_/, '')}</div>
+          </div>
+        `).join('');
+      } catch (e) { console.error(e); }
+    }
+
+    async function deleteMedia(filename) {
+      if (!confirm('Eliminar este archivo?')) return;
+      try {
+        await fetch(`/api/uploads/${filename}`, { method: 'DELETE' });
+        loadMediaLibrary();
+        showToast('Archivo eliminado', 'success');
+      } catch (e) { console.error(e); }
+    }
+
+    function sendMedia(url, type) {
+      const fullUrl = url.startsWith('http') ? url : window.location.origin + url;
+      const cell0Url = document.getElementById('url-0');
+      if (cell0Url && !cell0Url.value.trim()) {
+        cell0Url.value = fullUrl;
+        document.getElementById('type-0-' + type).checked = true;
+      } else {
+        document.getElementById('url-0').value = fullUrl;
+        document.getElementById('type-0-' + type).checked = true;
+      }
+      showToast('Contenido cargado en Pantalla 1. Ahora envialo.', 'success');
+    }
+
+    loadMediaLibrary();
+  </script>
+
+  <div class="error-badge hidden" id="error-badge" onclick="toggleErrorLog()">0</div>
+  <div class="error-log" id="error-log">
+    <div class="error-log-header">
+      <h3>Errores de clientes</h3>
+      <button class="close-btn" onclick="toggleErrorLog()">&times;</button>
+    </div>
+    <div class="error-list" id="error-list"></div>
+  </div>
+</body>
+</html>
