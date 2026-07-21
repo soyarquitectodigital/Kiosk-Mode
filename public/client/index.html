@@ -313,10 +313,11 @@
       });
     }
 
-    function createAntiPausePlayer(containerId, videoId) {
+    function createAntiPausePlayer(containerId, videoId, cell) {
       if (!youtubeApiReady) {
+        if (cell) cell.innerHTML = '<div class="error-screen">YouTube API no disponible<br><small>Verifica la conexion a internet</small></div>';
         reportError('YouTube API no lista', 'YouTube');
-        return;
+        return null;
       }
       try {
         const player = new YT.Player(containerId, {
@@ -338,6 +339,12 @@
           events: {
             onReady: (event) => {
               event.target.playVideo();
+              if (cell) {
+                const div = cell.querySelector('#' + containerId);
+                if (div) div.style.display = 'block';
+                const loader = cell.querySelector('.yt-loading');
+                if (loader) loader.style.display = 'none';
+              }
             },
             onStateChange: (event) => {
               if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
@@ -345,7 +352,8 @@
               }
             },
             onError: (event) => {
-              const errors = {2:'URL invalida',5:'Error de reproductor HTML5',100:'Video no encontrado',101:'Reproduccion bloqueada',150:'Reproduccion bloqueada'};
+              const errors = {2:'URL invalida',5:'Error de reproductor HTML5',100:'Video no encontrado o privado',101:'Reproduccion bloqueada por el sitio',150:'Reproduccion bloqueada por el sitio'};
+              if (cell) cell.innerHTML = '<div class="error-screen">Error de YouTube<br><small>' + (errors[event.data] || 'Codigo ' + event.data) + '</small></div>';
               reportError('Error de YouTube (codigo ' + event.data + ': ' + (errors[event.data]||'desconocido') + ')', 'YouTube');
             }
           }
@@ -353,7 +361,9 @@
         youtubePlayers.push(player);
         return player;
       } catch (e) {
+        if (cell) cell.innerHTML = '<div class="error-screen">Error al crear reproductor<br><small>' + e.message + '</small></div>';
         reportError(e, 'YouTube');
+        return null;
       }
     }
 
@@ -429,23 +439,45 @@
             reportError('No se pudo extraer el ID del video de YouTube', 'YouTube: URL invalida');
             continue;
           }
+          
+          const loadingEl = document.createElement('div');
+          loadingEl.className = 'yt-loading';
+          loadingEl.style.cssText = 'color:rgba(255,255,255,0.5);display:flex;align-items:center;justify-content:center;height:100%;font-size:0.9rem;';
+          loadingEl.textContent = 'Cargando YouTube...';
+          cell.appendChild(loadingEl);
+          
           const containerId = 'yt-' + Date.now() + '-' + i;
           const div = document.createElement('div');
           div.id = containerId;
-          div.style.cssText = 'width:100%;height:100%;position:absolute;inset:0;';
+          div.style.cssText = 'width:100%;height:100%;position:absolute;inset:0;display:none;';
           cell.appendChild(div);
           
+          cell.style.opacity = '1';
+          cell.style.transform = 'scale(1)';
+          
+          let timedOut = false;
+          const timeout = setTimeout(() => {
+            if (!timedOut) {
+              timedOut = true;
+              cell.innerHTML = '<div class="error-screen">Timeout al cargar YouTube<br><small>Verifica la conexion o el ID del video</small></div>';
+              reportError('Timeout cargando YouTube: ' + videoId, 'YouTube');
+            }
+          }, 20000);
+          
           loadYouTubeAPI().then(() => {
-            createAntiPausePlayer(containerId, videoId);
-            if (youtubePlayers.length > 0) startWatchdog();
-            requestAnimationFrame(() => {
-              setTimeout(() => {
-                cell.style.opacity = '1';
-                cell.style.transform = 'scale(1)';
-              }, 300);
-            });
+            if (timedOut) return;
+            const player = createAntiPausePlayer(containerId, videoId, cell);
+            if (player) {
+              clearTimeout(timeout);
+              if (youtubePlayers.length > 0) startWatchdog();
+            }
           }).catch(e => {
-            reportError(e, 'YouTube');
+            if (!timedOut) {
+              clearTimeout(timeout);
+              timedOut = true;
+              cell.innerHTML = '<div class="error-screen">Error al cargar YouTube<br><small>Verifica la conexion a internet</small></div>';
+              reportError(e, 'YouTube');
+            }
           });
         } else if (type === 'image') {
           const img = document.createElement('img');
