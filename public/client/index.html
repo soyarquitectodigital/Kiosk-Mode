@@ -422,47 +422,7 @@
         
         const { url, type } = item;
         
-        if (type === 'image') {
-          const img = document.createElement('img');
-          img.src = url;
-          img.onload = () => {
-            img.classList.add('loaded');
-          };
-          img.onerror = () => {
-            cell.innerHTML = '<div class="error-screen">No se pudo cargar la imagen<br><small>' + url + '</small></div>';
-            reportError('Error cargando imagen: ' + url, 'Imagen');
-          };
-          cell.appendChild(img);
-        } else if (type === 'video') {
-          const video = document.createElement('video');
-          video.src = url;
-          video.autoplay = true;
-          video.loop = true;
-          video.muted = true;
-          video.playsInline = true;
-          video.onloadeddata = () => {
-            video.classList.add('loaded');
-          };
-          let retryCount = 0;
-          video.onerror = () => {
-            retryCount++;
-            if (retryCount <= MAX_RETRIES) {
-              setTimeout(() => { video.load(); video.play(); }, 2000);
-            } else {
-              cell.innerHTML = '<div class="error-screen">No se pudo cargar el video<br><small>' + url + '</small><div class="retry-indicator">Reintentando...</div></div>';
-              reportError('Error cargando video despues de ' + MAX_RETRIES + ' intentos: ' + url, 'Video');
-            }
-          };
-          video.onstalled = () => {
-            console.log('Video stalled, recargando...');
-            video.load();
-            video.play();
-          };
-          video.onwaiting = () => {
-            showStatus('Buffering...', 'warning');
-          };
-          cell.appendChild(video);
-        } else if (type === 'youtube' || isYouTubeUrl(url)) {
+        if (type === 'youtube' || isYouTubeUrl(url)) {
           const videoId = extractYouTubeId(url);
           if (!videoId) {
             cell.innerHTML = '<div class="error-screen">No se pudo extraer el ID de YouTube<br><small>' + url + '</small></div>';
@@ -478,7 +438,6 @@
           loadYouTubeAPI().then(() => {
             createAntiPausePlayer(containerId, videoId);
             if (youtubePlayers.length > 0) startWatchdog();
-            // Fade in the cell with YouTube
             requestAnimationFrame(() => {
               setTimeout(() => {
                 cell.style.opacity = '1';
@@ -488,15 +447,63 @@
           }).catch(e => {
             reportError(e, 'YouTube');
           });
+        } else if (type === 'image') {
+          const img = document.createElement('img');
+          img.src = url;
+          img.onload = () => {
+            img.classList.add('loaded');
+          };
+          img.onerror = () => {
+            cell.innerHTML = '<div class="error-screen">No se pudo cargar la imagen<br><small>' + url + '</small></div>';
+            reportError('Error cargando imagen: ' + url, 'Imagen');
+          };
+          cell.appendChild(img);
+        } else if (type === 'video') {
+          const video = document.createElement('video');
+          video.muted = true;
+          video.autoplay = true;
+          video.loop = true;
+          video.playsInline = true;
+          video.controls = false;
+          video.setAttribute('playsinline', '');
+          video.src = url;
+          video.onloadedmetadata = () => {
+            video.play().catch(() => {});
+            video.classList.add('loaded');
+          };
+          video.oncanplay = () => {
+            video.play().catch(() => {});
+          };
+          let retryCount = 0;
+          video.onerror = () => {
+            retryCount++;
+            if (retryCount <= MAX_RETRIES) {
+              setTimeout(() => { video.load(); video.play(); }, 2000);
+            } else {
+              cell.innerHTML = '<div class="error-screen">No se pudo cargar el video<br><small>' + url + '</small><div class="retry-indicator">Reintentando...</div></div>';
+              reportError('Error cargando video despues de ' + MAX_RETRIES + ' intentos: ' + url, 'Video');
+            }
+          };
+          video.onstalled = () => {
+            video.load();
+            video.play();
+          };
+          video.onwaiting = () => {
+            showStatus('Buffering...', 'warning');
+          };
+          cell.appendChild(video);
         } else {
           const iframe = document.createElement('iframe');
           iframe.src = url;
+          iframe.setAttribute('allowfullscreen', '');
+          iframe.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture');
           iframe.style.cssText = 'width:100%;height:100%;position:absolute;inset:0;border:none;';
           iframe.onload = () => {
             iframe.classList.add('loaded');
           };
           iframe.onerror = () => {
-            reportError('Error cargando iframe: ' + url, 'Web');
+            iframe.classList.add('loaded');
+            reportError('Error cargando web: ' + url, 'Web');
           };
           cell.appendChild(iframe);
         }
